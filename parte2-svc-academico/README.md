@@ -203,12 +203,27 @@ ejecutable desde la aplicación o con `newman run`.
 
 ---
 
-## 5. Lo que no está implementado y cómo lo abordaría
+## 5. Alcance: lo logrado y lo pendiente
 
 El alcance se acotó deliberadamente: **un endpoint terminado de punta a punta** en lugar de tres a medias.
+
+### 5.0 Lo que sí quedó implementado
+
+| Aspecto | Estado |
+|---|---|
+| Contrato del servicio | Completo: invocación, entrada, salida y errores en formato RFC 9457 |
+| Modelo de datos | 8 tablas con restricciones e índices, versionadas en migraciones de Flyway |
+| Implementación | Endpoint funcional en Java 21 y Spring Boot 4.1, en capas separadas |
+| Datos de ejemplo | Diseñados para ejercitar los casos límite, no solo el camino feliz |
+| Pruebas | 12 en verde: 4 de contrato y 8 de integración contra PostgreSQL real |
+| Documentación | OpenAPI generado desde el código, colección Postman y este README |
+| Ejecución | `docker compose` más el wrapper de Maven, sin instalar nada más |
+
+### 5.1 Lo que el servicio debería tener y aún no tiene
+
 Lo que falta para que este servicio sea el de la Parte 1, en orden de prioridad:
 
-### 5.1 Refresco de la réplica por eventos
+### Refresco de la réplica por eventos
 Hoy los datos se cargan con Flyway. En la arquitectura real, `svc-academico` se **suscribe al bus** de la
 plataforma de integración y consume `MatriculaActualizada`, `NotaPublicada` y `EstadoAcademicoCambiado`.
 
@@ -218,7 +233,7 @@ Cómo lo haría: un consumidor por tipo de evento; **idempotencia** por identifi
 nocturna** contra el ERP que corrija las divergencias que el flujo de eventos haya dejado. Sin ese
 reconciliador, cualquier evento perdido queda como un error silencioso permanente.
 
-### 5.2 Autenticación y autorización
+### Autenticación y autorización
 Descrito en la Parte 3. En código: `spring-boot-starter-oauth2-resource-server` validando el JWT de la
 plataforma de identidad contra su JWKS, más una comprobación en el servicio de que el `sub` del token
 corresponde al estudiante consultado, o de que el usuario de acompañamiento lo tiene asignado.
@@ -226,17 +241,17 @@ corresponde al estudiante consultado, o de que el usuario de acompañamiento lo 
 La regla **no puede vivir solo en el controlador**: iría en la capa de servicio, porque es una regla de
 negocio y no una de transporte.
 
-### 5.3 Resiliencia hacia el ERP
+### Resiliencia hacia el ERP
 Cuando `svc-academico` consulte el ERP como respaldo, esa llamada necesita **timeout, reintento con
 backoff y circuit breaker** (Resilience4j). Sin circuit breaker, un ERP lento se propaga como agotamiento
 del pool de hilos y tumba el servicio entero.
 
-### 5.4 Observabilidad
+### Observabilidad
 Actuator ya expone `health` y `prometheus`. Falta **trazabilidad distribuida** con Micrometer Tracing para
 poder seguir una petición desde el navegador hasta el ERP, que es exactamente lo que el escenario A de la
 Parte 4 requiere para diagnosticar un fallo intermitente.
 
-### 5.5 Auditoría de accesos
+### Auditoría de accesos
 El escenario B de la Parte 4 exige poder responder con certeza quién consultó qué. Requiere un registro
 **append-only** de cada consulta — quién, a qué estudiante, cuándo, desde dónde — separado de los logs de
 aplicación y con retención definida.

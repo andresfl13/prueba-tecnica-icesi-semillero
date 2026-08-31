@@ -29,7 +29,7 @@ resultan falsos** — que es la parte que importa.
 
 | # | Supuesto | Por qué es razonable | Si fuera falso |
 |---|---|---|---|
-| S1 | ~20.000 estudiantes activos y ~300 personas de acompañamiento, con picos en matrícula y publicación de notas | Tamaño típico de una universidad privada colombiana | Con volúmenes mucho menores, la separación en microservicios dejaría de justificarse |
+| S1 | ~8.000 estudiantes activos y ~300 personas de acompañamiento, con picos en matrícula y publicación de notas | Tamaño típico de una universidad privada colombiana | Con volúmenes mucho menores, la separación en microservicios dejaría de justificarse |
 | S2 | **El ERP no emite eventos por sí solo.** La plataforma de integración los deriva por CDC sobre la BD o por sondeo programado | El enunciado dice "algunas APIs y acceso a la BD", no menciona eventos | Se cae todo el refresco por eventos; quedaría solo sincronización programada, con más desfase |
 | S3 | La asignación asesor ↔ estudiante **no existe hoy** en ningún sistema | El enunciado dice que los registros de acompañamiento son nuevos | Si el ERP ya la tuviera, se replica igual que la matrícula y `svc-acompanamiento` deja de ser su dueño |
 | S4 | La plataforma de identidad soporta OIDC para usuarios y OAuth2 *client credentials* para servicio a servicio | El enunciado dice "estándares abiertos de identidad" | Habría que introducir un emisor de tokens propio para el tráfico interno |
