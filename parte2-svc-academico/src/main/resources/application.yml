@@ -3,7 +3,12 @@ spring:
     name: svc-academico
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/vista360_academico}
+    # La URL se compone a partir de DB_HOST, DB_PORT y DB_NAME para que la MISMA
+    # variable que publica el puerto en docker-compose apunte tambien la aplicacion.
+    # Si gobernaran variables distintas, cambiar el puerto del contenedor dejaria a la
+    # aplicacion apuntando a otra base: un fallo silencioso y dificil de diagnosticar.
+    # DB_URL sigue disponible para sobreescribir la URL completa en un despliegue.
+    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:vista360_academico}}
     username: ${DB_USER:vista360}
     password: ${DB_PASSWORD:vista360}
 
