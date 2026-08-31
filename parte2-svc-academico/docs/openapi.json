@@ -1,0 +1,318 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "svc-academico \u00b7 Vista 360 del Estudiante",
+        "description": "Servicio de consulta de materias matriculadas y notas del periodo.\n\nMantiene una replica de solo lectura de los datos academicos cuya fuente de\nverdad es el ERP institucional. Toda respuesta declara la frescura del dato.",
+        "contact": {
+            "name": "Oficina de Arquitectura e Innovacion de TI"
+        },
+        "license": {
+            "name": "Uso academico"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8081",
+            "description": "Generated server url"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Carga academica",
+            "description": "Consulta de materias matriculadas y notas del periodo"
+        }
+    ],
+    "paths": {
+        "/api/v1/estudiantes/{codigoEstudiante}/carga-academica": {
+            "get": {
+                "tags": [
+                    "Carga academica"
+                ],
+                "summary": "Materias matriculadas y notas de un estudiante",
+                "description": "Devuelve las materias con matricula INSCRITA en el periodo indicado y las notas\nregistradas hasta el momento. Si no se indica periodo, se usa el vigente.\n\nLos datos academicos son una replica del ERP institucional: la respuesta incluye\nun bloque 'frescura' con el origen y la antiguedad del dato.",
+                "operationId": "consultarCargaAcademica",
+                "parameters": [
+                    {
+                        "name": "codigoEstudiante",
+                        "in": "path",
+                        "description": "Codigo institucional del estudiante",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^A\\d{8}$"
+                        },
+                        "example": "A00398123"
+                    },
+                    {
+                        "name": "periodo",
+                        "in": "query",
+                        "description": "Periodo academico a consultar. Si se omite, se usa el vigente",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}$"
+                        },
+                        "example": "2026-01"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Carga academica del estudiante",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CargaAcademicaResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El codigo del estudiante no tiene el formato esperado",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetail"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "El estudiante o el periodo no existen",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetail"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ProblemDetail": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "detail": {
+                        "type": "string"
+                    },
+                    "instance": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "properties": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    }
+                }
+            },
+            "CargaAcademicaResponse": {
+                "type": "object",
+                "description": "Respuesta del servicio: materias matriculadas y notas del estudiante en un periodo",
+                "properties": {
+                    "estudiante": {
+                        "$ref": "#/components/schemas/EstudianteDto"
+                    },
+                    "periodo": {
+                        "$ref": "#/components/schemas/PeriodoDto"
+                    },
+                    "materias": {
+                        "type": "array",
+                        "description": "Materias con matricula INSCRITA. Puede venir vacia si el estudiante no matriculo",
+                        "items": {
+                            "$ref": "#/components/schemas/MateriaMatriculadaDto"
+                        }
+                    },
+                    "resumen": {
+                        "$ref": "#/components/schemas/ResumenDto"
+                    },
+                    "frescura": {
+                        "$ref": "#/components/schemas/FrescuraDto"
+                    }
+                }
+            },
+            "EstudianteDto": {
+                "type": "object",
+                "description": "Datos basicos del estudiante consultado",
+                "properties": {
+                    "codigo": {
+                        "type": "string",
+                        "example": "A00398123"
+                    },
+                    "nombreCompleto": {
+                        "type": "string",
+                        "example": "Andres Felipe Lopez Reyes"
+                    },
+                    "programa": {
+                        "type": "string",
+                        "example": "Ingenieria de Sistemas"
+                    },
+                    "semestre": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 7
+                    },
+                    "estadoAcademico": {
+                        "type": "string",
+                        "description": "Estado academico segun el ERP",
+                        "example": "ACTIVO"
+                    }
+                }
+            },
+            "FrescuraDto": {
+                "type": "object",
+                "description": "De donde viene el dato y que tan fresco es",
+                "properties": {
+                    "origen": {
+                        "type": "string",
+                        "description": "Sistema fuente de verdad del dato",
+                        "example": "ERP"
+                    },
+                    "sincronizadoEn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Ultima sincronizacion exitosa contra el sistema fuente"
+                    },
+                    "antiguedadSegundos": {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "Antiguedad del dato en segundos al momento de responder",
+                        "example": 240
+                    }
+                }
+            },
+            "MateriaMatriculadaDto": {
+                "type": "object",
+                "description": "Materia matriculada por el estudiante en el periodo, con sus notas",
+                "properties": {
+                    "codigo": {
+                        "type": "string",
+                        "example": "TIC-3011"
+                    },
+                    "nombre": {
+                        "type": "string",
+                        "example": "Computacion en Internet II"
+                    },
+                    "creditos": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 3
+                    },
+                    "grupo": {
+                        "type": "string",
+                        "description": "Grupo en el que quedo inscrito",
+                        "example": "01"
+                    },
+                    "docente": {
+                        "type": "string",
+                        "example": "Carlos Andres Delgado"
+                    },
+                    "notas": {
+                        "type": "array",
+                        "description": "Notas registradas hasta el momento. Vacia si aun no hay ninguna",
+                        "items": {
+                            "$ref": "#/components/schemas/NotaDto"
+                        }
+                    },
+                    "notaAcumulada": {
+                        "type": "number",
+                        "description": "Nota acumulada sobre lo evaluado hasta ahora, NO la nota final proyectada.\nEs null cuando todavia no hay ninguna nota registrada.",
+                        "example": 4.4
+                    },
+                    "porcentajeEvaluado": {
+                        "type": "number",
+                        "description": "Porcentaje del curso que ya fue evaluado. Da contexto a la nota acumulada",
+                        "example": 45.0
+                    }
+                }
+            },
+            "NotaDto": {
+                "type": "object",
+                "description": "Nota de una evaluacion concreta dentro de la materia",
+                "properties": {
+                    "evaluacion": {
+                        "type": "string",
+                        "description": "Nombre de la evaluacion",
+                        "example": "Parcial 1"
+                    },
+                    "porcentaje": {
+                        "type": "number",
+                        "description": "Peso de la evaluacion sobre la nota final, en porcentaje",
+                        "example": 30.0
+                    },
+                    "valor": {
+                        "type": "number",
+                        "description": "Nota obtenida, en escala 0.0 a 5.0",
+                        "example": 4.3
+                    },
+                    "fechaRegistro": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Momento en que el docente registro la nota en el ERP"
+                    }
+                }
+            },
+            "PeriodoDto": {
+                "type": "object",
+                "description": "Periodo academico al que corresponde la carga devuelta",
+                "properties": {
+                    "codigo": {
+                        "type": "string",
+                        "example": "2026-01"
+                    },
+                    "nombre": {
+                        "type": "string",
+                        "example": "Primer semestre 2026"
+                    },
+                    "fechaInicio": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "fechaFin": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "vigente": {
+                        "type": "boolean",
+                        "description": "Indica si es el periodo vigente o uno consultado explicitamente"
+                    }
+                }
+            },
+            "ResumenDto": {
+                "type": "object",
+                "description": "Totales del periodo, precalculados para que el consumidor no tenga que sumarlos",
+                "properties": {
+                    "totalMaterias": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 3
+                    },
+                    "totalCreditos": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 9
+                    },
+                    "promedioAcumulado": {
+                        "type": "number",
+                        "description": "Promedio ponderado por creditos sobre lo evaluado hasta ahora.\nEs null si ninguna materia tiene notas todavia.",
+                        "example": 3.95
+                    }
+                }
+            }
+        }
+    }
+}
