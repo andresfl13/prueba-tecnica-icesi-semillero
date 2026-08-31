@@ -13,8 +13,8 @@ cada estudiante apoyándose en el ecosistema institucional existente.
 |---|---|---|
 | **1 · Diseño de la solución** | Tres diagramas de arquitectura y el documento de decisiones y supuestos | [`parte1-arquitectura/`](parte1-arquitectura/) |
 | **2 · Servicio** | Especificación, modelo de datos e implementación de `svc-academico` | [`parte2-svc-academico/`](parte2-svc-academico/) |
-| **3 · Seguridad y comunicación** | Respuestas argumentadas a los escenarios A y B | *pendiente* |
-| **4 · Operación y calidad** | Respuestas argumentadas a los escenarios A y B | *pendiente* |
+| **3 · Seguridad y comunicación** | Autenticación, autorización y los escenarios A y B | [`parte3-4-seguridad-operacion/`](parte3-4-seguridad-operacion/) |
+| **4 · Operación y calidad** | Incidente intermitente y reclamo por acceso indebido | [`parte3-4-seguridad-operacion/`](parte3-4-seguridad-operacion/) |
 
 ## Parte 1 · Diseño
 
@@ -45,6 +45,16 @@ docker compose up -d
 
 Detalle del contrato, el modelo de datos, las pruebas y el plan de lo pendiente:
 [`parte2-svc-academico/README.md`](parte2-svc-academico/README.md).
+
+## Partes 3 y 4 · Seguridad, comunicación, operación y calidad
+
+Respuestas argumentadas en [`RESPUESTAS.md`](parte3-4-seguridad-operacion/RESPUESTAS.md), apoyadas en dos
+diagramas de secuencia:
+
+| Vista | Qué responde |
+|---|---|
+| [Autenticación y autorización](parte3-4-seguridad-operacion/diagramas/out/04-autenticacion-autorizacion.png) | Cómo se autentica el usuario y dónde se decide qué puede ver, y sobre quién |
+| [Escenario financiero](parte3-4-seguridad-operacion/diagramas/out/05-escenario-financiero.png) | Cómo se resuelve la consulta en vivo y qué pasa cuando el ERP no responde |
 
 ---
 
