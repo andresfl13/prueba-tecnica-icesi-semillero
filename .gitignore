@@ -1,0 +1,33 @@
+# ---- Java / Maven ----
+target/
+!.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+
+# ---- IDE ----
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+nbproject/
+
+# ---- Sistema operativo ----
+.DS_Store
+Thumbs.db
+
+# ---- Logs y temporales ----
+*.log
+logs/
+tmp/
+
+# ---- Configuracion local con credenciales ----
+# Nunca se versiona: las credenciales reales van por variables de entorno.
+.env
+.env.local
+**/application-local.yml
+**/application-secrets.yml
