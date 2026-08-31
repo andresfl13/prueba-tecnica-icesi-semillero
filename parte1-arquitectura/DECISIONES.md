@@ -159,11 +159,10 @@ fusionarlos sería razonable.
 
 ## 7. Uso de herramientas de IA
 
-> Completar antes de entregar, según lo que efectivamente hayas usado.
+Declaración completa en [`USO-DE-IA.md`](../USO-DE-IA.md).
 
-- **Herramienta:** Claude (Claude Code).
-- **En qué partes:** exploración de alternativas de arquitectura, redacción de este documento y generación del código
-  PlantUML de los tres diagramas.
-- **Con qué propósito:** contrastar decisiones y sus alternativas, y acelerar la producción de los entregables.
-  Las decisiones de arquitectura (microservicios, estrategia híbrida de datos, integración centralizada) fueron
-  tomadas y validadas por mí.
+En esta parte usé **Claude (Claude Code)** para que planteara alternativas con sus contrapartidas en cada
+decisión estructural, y para redactar este documento y el código PlantUML de los diagramas. Las cuatro
+decisiones —estrategia híbrida de datos, microservicios, integración centralizada y alimentación
+distribuida del data warehouse— las tomé yo sobre esas alternativas. En el caso de los microservicios,
+descarté la recomendación de la herramienta, que proponía un monolito modular.

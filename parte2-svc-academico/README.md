@@ -148,9 +148,15 @@ docker compose up -d
 ./mvnw spring-boot:run
 ```
 
-> Si el puerto 5432 ya está ocupado por un PostgreSQL local:
-> `DB_PORT=5433 docker compose up -d` y luego
-> `DB_URL=jdbc:postgresql://localhost:5433/vista360_academico ./mvnw spring-boot:run`
+> Si el puerto 5432 ya está ocupado por un PostgreSQL local, exporta la variable **antes de ambos
+> comandos**, en la misma terminal:
+>
+> ```bash
+> export DB_PORT=5433
+> ```
+>
+> `DB_PORT` gobierna a la vez el puerto que publica el contenedor y el que usa la aplicación. Si solo se
+> pasara al `docker compose`, la aplicación apuntaría a la base local en lugar de al contenedor.
 
 El esquema y los datos de ejemplo los aplica **Flyway al arrancar**, no el `docker-compose`: así el mismo
 camino de migración se ejecuta en local y en despliegue.
@@ -239,11 +245,8 @@ aplicación y con retención definida.
 
 ## 6. Uso de herramientas de IA
 
-> Ajustar antes de entregar.
+Declaración completa en [`USO-DE-IA.md`](../USO-DE-IA.md).
 
-- **Herramienta:** Claude (Claude Code).
-- **En qué partes:** generación del andamiaje del proyecto, redacción de este README y del código de las
-  migraciones, entidades y pruebas.
-- **Con qué propósito:** acelerar la escritura y contrastar decisiones de diseño del contrato y del modelo
-  de datos. Las decisiones — modelar la nota sobre la matrícula, ponderar contra lo evaluado, exponer la
-  frescura en el contrato y acotar el alcance a un endpoint terminado — fueron tomadas y validadas por mí.
+En esta parte definí el criterio del stack, el motor de base de datos y el alcance; **Claude (Claude Code)**
+verificó las versiones vigentes contra Maven Central, escribió el código, resolvió las incompatibilidades
+de Spring Boot 4 que fueron apareciendo y ejecutó las pruebas hasta dejarlas en verde.

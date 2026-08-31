@@ -71,13 +71,24 @@ El repositorio sigue un flujo tipo **Git Flow**:
 Los *merges* usan `--no-ff` a propósito: conservan la agrupación de cada entregable en el historial,
 que es justamente lo que se pierde con un *fast-forward*. Los mensajes siguen Conventional Commits.
 
-La secuencia completa de comandos está en [`VERSIONADO.md`](VERSIONADO.md).
+## Cómo ejecutar y verificar
+
+Guía completa en [`GUIA-DE-EJECUCION.md`](GUIA-DE-EJECUCION.md): requisitos, ejecución, casos de prueba
+sugeridos y resolución de problemas.
+
+> La Parte 2 es un **servicio backend (API REST)**, no una aplicación con interfaz gráfica. Se consume por
+> HTTP; la documentación interactiva del contrato está en Swagger UI.
+
+La ruta más corta:
+
+```bash
+cd parte2-svc-academico && export JAVA_HOME=$(/usr/libexec/java_home -v 21) && ./mvnw verify
+```
+
+> Requiere **JDK 21+** y Docker corriendo. Con un JDK anterior el *build* falla a propósito con un mensaje
+> que explica qué hacer.
 
 ## Uso de herramientas de IA
 
-> Ajustar antes de entregar.
-
-Se usó **Claude (Claude Code)** como apoyo en la exploración de alternativas de arquitectura, la redacción
-de la documentación y la generación del código de diagramas, migraciones, entidades y pruebas. Las
-decisiones de diseño fueron tomadas y validadas por el autor. El detalle por parte está declarado al final
-de cada documento.
+Se usó **Claude (Claude Code)**. La declaración completa —qué hizo la herramienta y qué decisiones tomé
+yo, parte por parte— está en [`USO-DE-IA.md`](USO-DE-IA.md).
