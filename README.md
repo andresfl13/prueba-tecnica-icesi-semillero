@@ -13,8 +13,8 @@ cada estudiante apoyándose en el ecosistema institucional existente.
 |---|---|---|
 | **1 · Diseño de la solución** | Tres diagramas de arquitectura y el documento de decisiones y supuestos | [`parte1-arquitectura/`](parte1-arquitectura/) |
 | **2 · Servicio** | Especificación, modelo de datos e implementación de `svc-academico` | [`parte2-svc-academico/`](parte2-svc-academico/) |
-| **3 · Seguridad y comunicación** | Respuestas argumentadas a los escenarios A y B | *pendiente* |
-| **4 · Operación y calidad** | Respuestas argumentadas a los escenarios A y B | *pendiente* |
+| **3 · Seguridad y comunicación** | Autenticación, autorización y los escenarios A y B | [`parte3-4-seguridad-operacion/`](parte3-4-seguridad-operacion/) |
+| **4 · Operación y calidad** | Incidente intermitente y reclamo por acceso indebido | [`parte3-4-seguridad-operacion/`](parte3-4-seguridad-operacion/) |
 
 ## Parte 1 · Diseño
 
@@ -46,6 +46,16 @@ docker compose up -d
 Detalle del contrato, el modelo de datos, las pruebas y el plan de lo pendiente:
 [`parte2-svc-academico/README.md`](parte2-svc-academico/README.md).
 
+## Partes 3 y 4 · Seguridad, comunicación, operación y calidad
+
+Respuestas argumentadas en [`RESPUESTAS.md`](parte3-4-seguridad-operacion/RESPUESTAS.md), apoyadas en dos
+diagramas de secuencia:
+
+| Vista | Qué responde |
+|---|---|
+| [Autenticación y autorización](parte3-4-seguridad-operacion/diagramas/out/04-autenticacion-autorizacion.png) | Cómo se autentica el usuario y dónde se decide qué puede ver, y sobre quién |
+| [Escenario financiero](parte3-4-seguridad-operacion/diagramas/out/05-escenario-financiero.png) | Cómo se resuelve la consulta en vivo y qué pasa cuando el ERP no responde |
+
 ---
 
 ## Cómo está versionado
@@ -61,13 +71,24 @@ El repositorio sigue un flujo tipo **Git Flow**:
 Los *merges* usan `--no-ff` a propósito: conservan la agrupación de cada entregable en el historial,
 que es justamente lo que se pierde con un *fast-forward*. Los mensajes siguen Conventional Commits.
 
-La secuencia completa de comandos está en [`VERSIONADO.md`](VERSIONADO.md).
+## Cómo ejecutar y verificar
+
+Guía completa en [`GUIA-DE-EJECUCION.md`](GUIA-DE-EJECUCION.md): requisitos, ejecución, casos de prueba
+sugeridos y resolución de problemas.
+
+> La Parte 2 es un **servicio backend (API REST)**, no una aplicación con interfaz gráfica. Se consume por
+> HTTP; la documentación interactiva del contrato está en Swagger UI.
+
+La ruta más corta:
+
+```bash
+cd parte2-svc-academico && export JAVA_HOME=$(/usr/libexec/java_home -v 21) && ./mvnw verify
+```
+
+> Requiere **JDK 21+** y Docker corriendo. Con un JDK anterior el *build* falla a propósito con un mensaje
+> que explica qué hacer.
 
 ## Uso de herramientas de IA
 
-> Ajustar antes de entregar.
-
-Se usó **Claude (Claude Code)** como apoyo en la exploración de alternativas de arquitectura, la redacción
-de la documentación y la generación del código de diagramas, migraciones, entidades y pruebas. Las
-decisiones de diseño fueron tomadas y validadas por el autor. El detalle por parte está declarado al final
-de cada documento.
+Se usó **Claude (Claude Code)**. La declaración completa —qué hizo la herramienta y qué decisiones tomé
+yo, parte por parte— está en [`USO-DE-IA.md`](USO-DE-IA.md).

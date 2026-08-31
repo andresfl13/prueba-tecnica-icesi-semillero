@@ -1,0 +1,89 @@
+@startuml 02-contenedores
+!include <C4/C4_Container>
+
+title Vista 360° del Estudiante — Contenedores (C4 nivel 2)
+caption Azul continuo = síncrono (el usuario espera) · Rojo = lectura en vivo · Naranja punteado = asíncrono (se propaga)
+
+skinparam defaultFontName Helvetica
+skinparam wrapWidth 190
+skinparam nodesep 40
+skinparam ranksep 70
+LAYOUT_TOP_DOWN()
+
+AddRelTag("sync",  $textColor="#0B4F8A", $lineColor="#0B4F8A")
+AddRelTag("live",  $textColor="#A33333", $lineColor="#A33333", $lineThickness=2)
+AddRelTag("async", $textColor="#B07000", $lineColor="#B07000", $lineStyle=DashedLine())
+AddRelTag("authn", $textColor="#5B5B5B", $lineColor="#5B5B5B", $lineStyle=DottedLine())
+
+Person(estudiante, "Estudiante", "Ve únicamente su propia información")
+Person(acompanamiento, "Equipo de acompañamiento", "Ve solo a los estudiantes que tiene asignados; registra reportes, alertas y solicitudes")
+
+System_Boundary(vista360, "Vista 360° del Estudiante   (lo nuevo)") {
+
+    Container(spa, "Portal Vista 360°", "SPA", "Interfaz única. No guarda secretos: OIDC + PKCE")
+    Container(bff, "BFF / Agregador", "API REST", "Compone la vista: llama a los servicios en paralelo, con timeout por servicio y degradación parcial. No es dueño de ningún dato")
+
+    Boundary(d_acad, "Dominio académico") {
+        Container(academico, "svc-academico", "API REST", "Matrícula, materias y notas.\n**Implementado en la Parte 2**")
+        ContainerDb(db_acad, "BD Académica", "PostgreSQL", "Réplica de solo lectura del ERP, refrescada por eventos")
+    }
+    Boundary(d_fin, "Dominio financiero") {
+        Container(financiero, "svc-financiero", "API REST", "Estado financiero. No persiste el dato: lo lee en vivo con circuit breaker")
+        ContainerDb(cache_fin, "Caché financiera", "Redis · TTL 30-60 s", "Amortigua ráfagas sin volver el saldo obsoleto")
+    }
+    Boundary(d_act, "Dominio de actividad") {
+        Container(actividad, "svc-actividad", "API REST", "Actividad en el campus virtual, por sincronización incremental")
+        ContainerDb(db_act, "BD Actividad", "PostgreSQL", "Réplica de accesos, entregas y participación")
+    }
+    Boundary(d_acomp, "Dominio de acompañamiento") {
+        Container(acomp, "svc-acompanamiento", "API REST", "FUENTE DE VERDAD de reportes, solicitudes y de la asignación asesor ↔ estudiante")
+        ContainerDb(db_acomp, "BD Acompañamiento", "PostgreSQL", "Dato nuevo: no existe hoy en ningún sistema")
+    }
+    Boundary(d_alert, "Dominio de alertas") {
+        Container(alertas, "svc-alertas", "Dirigido por eventos", "Motor de reglas de intervención temprana. Reacciona a eventos, no a usuarios")
+        ContainerDb(db_alert, "BD Alertas", "PostgreSQL", "Alertas generadas y su estado de atención")
+    }
+}
+
+System_Ext(idp, "Plataforma de identidad", "Autenticación con estándares abiertos")
+Boundary(integracion, "Plataforma de integración") {
+    Container_Ext(apim, "Mediación de APIs", "REST", "Único punto de entrada al ERP y al LMS: normaliza contratos, aplica throttling y traza cada llamada")
+    ContainerQueue_Ext(bus, "Bus de eventos", "Pub / Sub", "Distribuye los cambios de estado del ecosistema")
+}
+System_Ext(erp, "ERP institucional", "On-premise. Fuente de verdad de lo maestro, académico y financiero")
+System_Ext(lms, "Plataforma LMS", "Nube. Actividad en el campus virtual")
+
+Rel_D(estudiante, spa, "Consulta su información", "HTTPS", $tags="sync")
+Rel_D(acompanamiento, spa, "Consulta y registra acompañamiento", "HTTPS", $tags="sync")
+Rel(spa, idp, "Autentica y obtiene el token", "OIDC + PKCE", $tags="authn")
+Rel_D(spa, bff, "Solicita la vista 360°", "REST/JSON + JWT", $tags="sync")
+
+Rel_D(bff, academico, "Materias y notas", "REST", $tags="sync")
+Rel_D(bff, financiero, "Estado financiero", "REST", $tags="sync")
+Rel_D(bff, actividad, "Actividad del campus", "REST", $tags="sync")
+Rel_D(bff, acomp, "Reportes, solicitudes y verificación de la asignación", "REST", $tags="sync")
+Rel_D(bff, alertas, "Alertas vigentes", "REST", $tags="sync")
+
+Rel_D(academico, db_acad, "SQL")
+Rel_D(financiero, cache_fin, "RESP")
+Rel_D(actividad, db_act, "SQL")
+Rel_D(acomp, db_acomp, "SQL")
+Rel_D(alertas, db_alert, "SQL")
+
+Rel_D(financiero, apim, "LECTURA EN VIVO del estado financiero", "REST + OAuth2 client credentials", $tags="live")
+Rel_D(academico, apim, "Reconciliación programada y consulta de respaldo", "REST + OAuth2", $tags="sync")
+Rel_D(actividad, apim, "Sincronización incremental", "REST + OAuth2", $tags="sync")
+
+Rel_D(apim, erp, "Consulta APIs y accede a la BD\n(acceso reservado a la integración)", "REST / SQL", $tags="sync")
+Rel_D(apim, lms, "Consulta la actividad", "REST", $tags="sync")
+
+Rel_U(bus, academico, "MatriculaActualizada · NotaPublicada · EstadoAcademicoCambiado", "", $tags="async")
+Rel_U(bus, alertas, "Eventos que disparan reglas", "", $tags="async")
+
+Lay_R(d_acad, d_fin)
+Lay_R(d_fin, d_act)
+Lay_R(d_act, d_acomp)
+Lay_R(d_acomp, d_alert)
+Lay_R(spa, idp)
+Lay_D(vista360, integracion)
+@enduml

@@ -1,0 +1,202 @@
+{
+  "info": {
+    "name": "Vista 360 · svc-academico",
+    "description": "Consulta de materias matriculadas y notas del periodo.\n\nRequiere el servicio corriendo en {{baseUrl}}. Ver el README para levantarlo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081" },
+    { "key": "codigoEstudiante", "value": "A00398123" }
+  ],
+  "item": [
+    {
+      "name": "200 · Carga academica del periodo vigente",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/estudiantes/{{codigoEstudiante}}/carga-academica",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "estudiantes", "{{codigoEstudiante}}", "carga-academica"]
+        },
+        "description": "Caso principal: no se indica periodo, por lo que el servicio resuelve el vigente."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('responde 200', () => pm.response.to.have.status(200));",
+              "const cuerpo = pm.response.json();",
+              "pm.test('devuelve el estudiante consultado', () => {",
+              "    pm.expect(cuerpo.estudiante.codigo).to.eql(pm.variables.get('codigoEstudiante'));",
+              "});",
+              "pm.test('el periodo devuelto es el vigente', () => pm.expect(cuerpo.periodo.vigente).to.be.true);",
+              "pm.test('trae materias matriculadas', () => pm.expect(cuerpo.materias).to.be.an('array').that.is.not.empty);",
+              "pm.test('declara la frescura del dato replicado', () => {",
+              "    pm.expect(cuerpo.frescura.origen).to.eql('ERP');",
+              "    pm.expect(cuerpo.frescura).to.have.property('antiguedadSegundos');",
+              "});",
+              "pm.test('excluye las matriculas canceladas', () => {",
+              "    const canceladas = cuerpo.materias.filter(m => m.codigo === 'TEL-3100');",
+              "    pm.expect(canceladas).to.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "200 · Carga de un periodo anterior",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/estudiantes/{{codigoEstudiante}}/carga-academica?periodo=2025-02",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "estudiantes", "{{codigoEstudiante}}", "carga-academica"],
+          "query": [{ "key": "periodo", "value": "2025-02" }]
+        },
+        "description": "Comprueba que la carga de un periodo anterior no se mezcla con la vigente."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('responde 200', () => pm.response.to.have.status(200));",
+              "const cuerpo = pm.response.json();",
+              "pm.test('el periodo no es el vigente', () => pm.expect(cuerpo.periodo.vigente).to.be.false);",
+              "pm.test('solo trae la materia de ese periodo', () => {",
+              "    pm.expect(cuerpo.materias).to.have.lengthOf(1);",
+              "    pm.expect(cuerpo.materias[0].codigo).to.eql('MAT-1013');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "200 · Estudiante sin materias matriculadas",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/estudiantes/A00412998/carga-academica",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "estudiantes", "A00412998", "carga-academica"]
+        },
+        "description": "Existir y no tener carga son cosas distintas: esto responde 200 con lista vacia, no 404."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('responde 200 y no 404', () => pm.response.to.have.status(200));",
+              "pm.test('la lista de materias viene vacia', () => pm.expect(pm.response.json().materias).to.be.empty);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "404 · Estudiante inexistente",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/estudiantes/A00999999/carga-academica",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "estudiantes", "A00999999", "carga-academica"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('responde 404', () => pm.response.to.have.status(404));",
+              "pm.test('usa el formato problem+json (RFC 9457)', () => {",
+              "    const cuerpo = pm.response.json();",
+              "    pm.expect(cuerpo).to.have.property('type');",
+              "    pm.expect(cuerpo).to.have.property('title');",
+              "    pm.expect(cuerpo.recurso).to.eql('estudiante');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "400 · Codigo de estudiante con formato invalido",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/estudiantes/abc/carga-academica",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "estudiantes", "abc", "carga-academica"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('responde 400', () => pm.response.to.have.status(400));",
+              "pm.test('explica el formato esperado', () => {",
+              "    pm.expect(pm.response.json().detail).to.include('A00398123');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "404 · Periodo inexistente",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/estudiantes/{{codigoEstudiante}}/carga-academica?periodo=2030-01",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "estudiantes", "{{codigoEstudiante}}", "carga-academica"],
+          "query": [{ "key": "periodo", "value": "2030-01" }]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('responde 404', () => pm.response.to.have.status(404));",
+              "pm.test('identifica el recurso faltante', () => pm.expect(pm.response.json().recurso).to.eql('periodo'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health · estado del servicio",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/actuator/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["actuator", "health"]
+        },
+        "description": "Sonda de salud usada por el orquestador. Ver Parte 4."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('el servicio esta arriba', () => pm.expect(pm.response.json().status).to.eql('UP'));"]
+          }
+        }
+      ]
+    }
+  ]
+}

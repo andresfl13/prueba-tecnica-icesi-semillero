@@ -1,0 +1,25 @@
+# Levanta la base de datos del servicio.
+# El esquema y los datos de ejemplo los aplica Flyway al arrancar la aplicacion,
+# no este archivo: asi el mismo camino de migracion se ejecuta en local y en despliegue.
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: vista360-academico-db
+    environment:
+      POSTGRES_DB: vista360_academico
+      POSTGRES_USER: vista360
+      POSTGRES_PASSWORD: vista360
+    ports:
+      # Parametrizado porque es habitual tener ya un PostgreSQL local en 5432.
+      # Si el puerto esta ocupado: DB_PORT=5433 docker compose up -d
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - datos-academico:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vista360 -d vista360_academico"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  datos-academico:

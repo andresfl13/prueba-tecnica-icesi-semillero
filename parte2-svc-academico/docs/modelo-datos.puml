@@ -1,0 +1,127 @@
+@startuml modelo-datos
+title svc-academico — Modelo de datos
+
+skinparam defaultFontName Helvetica
+skinparam linetype ortho
+skinparam class {
+    BackgroundColor #FFFFFF
+    BorderColor #0B4F8A
+    ArrowColor #0B4F8A
+}
+hide circle
+
+legend top left
+  <b>Azul</b>: replica de solo lectura del ERP (fuente de verdad externa)
+  <b>Gris</b>: metadato propio del servicio
+endlegend
+
+entity "periodo_academico" as periodo #E8F0F8 {
+  * id : bigserial <<PK>>
+  --
+  * codigo : varchar(10) <<UQ>>
+  * nombre : varchar(60)
+  * fecha_inicio : date
+  * fecha_fin : date
+  * vigente : boolean
+  --
+  UQ parcial: solo un vigente
+}
+
+entity "estudiante" as estudiante #E8F0F8 {
+  * id : bigserial <<PK>>
+  --
+  * codigo_institucional : varchar(20) <<UQ>>
+  * nombres : varchar(120)
+  * apellidos : varchar(120)
+  * programa : varchar(120)
+    semestre : smallint
+  * estado_academico : varchar(30)
+  --
+  * origen, actualizado_en
+}
+
+entity "materia" as materia #E8F0F8 {
+  * id : bigserial <<PK>>
+  --
+  * codigo : varchar(20) <<UQ>>
+  * nombre : varchar(160)
+  * creditos : smallint
+}
+
+entity "grupo" as grupo #E8F0F8 {
+  * id : bigserial <<PK>>
+  --
+  * materia_id : bigint <<FK>>
+  * periodo_id : bigint <<FK>>
+  * codigo_grupo : varchar(10)
+    docente : varchar(160)
+  --
+  UQ (materia, periodo, grupo)
+}
+
+entity "matricula" as matricula #E8F0F8 {
+  * id : bigserial <<PK>>
+  --
+  * estudiante_id : bigint <<FK>>
+  * grupo_id : bigint <<FK>>
+  * estado : INSCRITA / CANCELADA / RETIRADA
+  * fecha_matricula : date
+  --
+  * origen, actualizado_en
+  UQ (estudiante, grupo)
+}
+
+entity "evaluacion" as evaluacion #E8F0F8 {
+  * id : bigserial <<PK>>
+  --
+  * grupo_id : bigint <<FK>>
+  * nombre : varchar(80)
+  * porcentaje : numeric(5,2)
+  * orden : smallint
+  --
+  UQ (grupo, nombre)
+}
+
+entity "nota" as nota #E8F0F8 {
+  * id : bigserial <<PK>>
+  --
+  * matricula_id : bigint <<FK>>
+  * evaluacion_id : bigint <<FK>>
+  * valor : numeric(3,2)  [0.0 - 5.0]
+  * fecha_registro : timestamptz
+  --
+  * origen, actualizado_en
+  UQ (matricula, evaluacion)
+}
+
+entity "sincronizacion_replica" as sync #EEEEEE {
+  * entidad : varchar(40) <<PK>>
+  --
+  * ultima_sincronizacion : timestamptz
+  * origen : varchar(20)
+    registros_afectados : integer
+}
+
+periodo    ||--o{ grupo     : "se ofertan en"
+materia    ||--o{ grupo     : "se dicta como"
+estudiante ||--o{ matricula : "inscribe"
+grupo      ||--o{ matricula : "recibe"
+grupo      ||--o{ evaluacion: "define su esquema"
+matricula  ||--o{ nota      : "acumula"
+evaluacion ||--o{ nota      : "califica"
+
+note bottom of nota
+  <b>Decision clave del modelo</b>
+  La nota cuelga de (matricula, evaluacion) y NO de
+  (estudiante, materia). Una nota solo existe dentro de
+  una inscripcion concreta: si el estudiante repite la
+  materia en otro periodo son dos matriculas distintas,
+  cada una con sus notas, sin ambiguedad.
+end note
+
+note bottom of sync
+  No viene del ERP: lo escribe el proceso de
+  sincronizacion y alimenta el bloque "frescura"
+  de la respuesta.
+end note
+@enduml
