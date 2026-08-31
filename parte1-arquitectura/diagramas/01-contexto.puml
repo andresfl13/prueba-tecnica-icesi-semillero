@@ -1,0 +1,38 @@
+@startuml 01-contexto
+!include <C4/C4_Context>
+
+title Vista 360° del Estudiante — Contexto (C4 nivel 1)
+caption Vista 360° no reemplaza ningún sistema: se apoya en el ecosistema y suma una capa propia de información
+
+skinparam defaultFontName Helvetica
+skinparam wrapWidth 200
+skinparam nodesep 55
+skinparam ranksep 80
+
+AddRelTag("sync",  $textColor="#0B4F8A", $lineColor="#0B4F8A")
+AddRelTag("async", $textColor="#B07000", $lineColor="#B07000", $lineStyle=DashedLine())
+AddRelTag("authn", $textColor="#5B5B5B", $lineColor="#5B5B5B", $lineStyle=DottedLine())
+
+Person(estudiante, "Estudiante", "Consulta su propia información personal, académica y financiera")
+Person(acompanamiento, "Equipo de acompañamiento", "Consulta a sus estudiantes asignados y registra reportes, alertas y solicitudes")
+
+System(vista360, "Vista 360° del Estudiante", "Centraliza la información del estudiante en un solo lugar y es la fuente de verdad del acompañamiento (dato que hoy no existe)")
+
+System_Ext(idp, "Plataforma de identidad", "Autentica a estudiantes y personal con estándares abiertos")
+System_Ext(integracion, "Plataforma de integración", "Media el acceso al ecosistema y distribuye sus cambios de estado")
+System_Ext(erp, "ERP institucional", "On-premise. Fuente de verdad de los datos maestros, académicos y financieros")
+System_Ext(lms, "Plataforma LMS", "Nube. Actividad del estudiante en el campus virtual")
+SystemDb_Ext(dw, "Data warehouse", "Repositorio analítico sobre el que se construyen los modelos")
+
+Rel_D(estudiante, vista360, "Consulta su información", "HTTPS", $tags="sync")
+Rel_D(acompanamiento, vista360, "Consulta y registra el acompañamiento", "HTTPS", $tags="sync")
+Rel_R(vista360, idp, "Delega la autenticación y recibe la identidad del usuario", "OIDC", $tags="authn")
+Rel_D(vista360, integracion, "Consulta datos del ecosistema y se suscribe a sus eventos", "REST / Pub-Sub", $tags="sync")
+Rel_D(integracion, erp, "Media todo el acceso: APIs y BD", "REST / SQL", $tags="sync")
+Rel_D(integracion, lms, "Consulta la actividad del campus", "REST", $tags="sync")
+Rel_R(vista360, dw, "Aporta sus datos propios: reportes, alertas y solicitudes", "Eventos", $tags="async")
+Rel_D(erp, dw, "Pipeline analítico propio", "ELT / batch", $tags="async")
+Rel_D(lms, dw, "Pipeline analítico propio", "ELT / batch", $tags="async")
+
+Lay_R(estudiante, acompanamiento)
+@enduml

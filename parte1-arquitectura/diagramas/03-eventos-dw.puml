@@ -1,0 +1,50 @@
+@startuml 03-eventos-dw
+!include <C4/C4_Container>
+
+title Flujo asíncrono: propagación de cambios y alimentación del data warehouse
+caption El ERP no emite eventos por sí solo (supuesto declarado): la plataforma de integración los deriva por CDC o sondeo programado
+
+skinparam defaultFontName Helvetica
+skinparam wrapWidth 195
+skinparam nodesep 45
+skinparam ranksep 75
+
+AddRelTag("async", $textColor="#B07000", $lineColor="#B07000", $lineStyle=DashedLine())
+AddRelTag("sync",  $textColor="#0B4F8A", $lineColor="#0B4F8A")
+AddRelTag("elt",   $textColor="#4A7A3A", $lineColor="#4A7A3A", $lineStyle=DashedLine())
+
+System_Ext(erp, "ERP institucional", "Cambia una matrícula, se publica una nota, cambia la condición académica")
+System_Ext(lms, "Plataforma LMS", "Actividad en el campus virtual")
+
+Boundary(integracion, "Plataforma de integración") {
+    Container_Ext(cdc, "Mediación / captura de cambios", "CDC o sondeo programado", "Deriva los cambios del ERP y los normaliza como eventos de dominio")
+    ContainerQueue_Ext(bus, "Bus de eventos", "Pub / Sub", "Un solo publicador, varios suscriptores independientes")
+}
+
+System_Boundary(vista360, "Vista 360° del Estudiante") {
+    Container(academico, "svc-academico", "API REST", "Refresca su réplica local al recibir el evento: la consulta del estudiante no vuelve a golpear el ERP")
+    Container(alertas, "svc-alertas", "Dirigido por eventos", "Evalúa reglas de intervención temprana sobre el cambio recibido")
+    Container(acomp, "svc-acompanamiento", "API REST", "Dueño de reportes, solicitudes y de la asignación asesor ↔ estudiante")
+}
+
+Person(equipo, "Equipo de acompañamiento", "Recibe la alerta y actúa de forma temprana")
+SystemDb_Ext(dw, "Data warehouse", "Repositorio analítico del ecosistema")
+
+Rel_D(erp, cdc, "Cambio de estado detectado", "", $tags="async")
+Rel_D(cdc, bus, "Publica EstadoAcademicoCambiado · MatriculaActualizada · NotaPublicada", "", $tags="async")
+
+Rel_D(bus, academico, "Suscripción: refresca la réplica", "", $tags="async")
+Rel_D(bus, alertas, "Suscripción: dispara las reglas", "", $tags="async")
+
+Rel_R(alertas, acomp, "¿Quién acompaña a este estudiante?", "REST", $tags="sync")
+Rel_D(alertas, equipo, "La alerta aparece en su bandeja", "", $tags="async")
+
+Rel_U(alertas, bus, "Publica AlertaGenerada", "", $tags="async")
+Rel_U(acomp, bus, "Publica ReporteRegistrado · SolicitudCreada", "", $tags="async")
+
+Rel_D(bus, dw, "Ingesta de los datos propios de Vista 360°:\nacompañamiento, alertas y solicitudes", "", $tags="async")
+Rel_D(erp, dw, "Pipeline analítico propio", "ELT / batch", $tags="elt")
+Rel_D(lms, dw, "Pipeline analítico propio", "ELT / batch", $tags="elt")
+
+Lay_R(erp, lms)
+@enduml
