@@ -338,11 +338,12 @@ auditoría, porque genera una confianza que no está respaldada.
 
 ## Uso de herramientas de IA
 
-> Ajustar antes de entregar.
+Declaración completa en [`USO-DE-IA.md`](../USO-DE-IA.md).
 
-- **Herramienta:** Claude (Claude Code).
-- **En qué partes:** redacción de este documento y del código PlantUML de los dos diagramas de secuencia.
-- **Con qué propósito:** contrastar alternativas de seguridad y comunicación, y estructurar las respuestas.
-  Las decisiones —patrón BFF con cookie `HttpOnly`, propagación del token del usuario, autorización
-  evaluada en cada servicio, lectura en vivo del dato financiero y auditoría de lecturas de solo
-  anexado— fueron tomadas y validadas por mí.
+Los dos escenarios de comunicación (3.2) aplican decisiones ya tomadas en la Parte 1. En seguridad y
+operación decidí, sobre alternativas contrastadas una por una: la custodia del token en el BFF, la
+propagación del token del usuario entre servicios, la evaluación de la autorización en cada microservicio,
+la trazabilidad distribuida como previsión prioritaria, la auditoría de lecturas además de escrituras y la
+vigencia histórica de la asignación asesor ↔ estudiante. **Claude (Claude Code)** redactó las respuestas,
+generó los diagramas de secuencia y aportó el respaldo técnico de cada decisión: estándares aplicables,
+referencias del OWASP API Security Top 10 y el marco normativo colombiano.

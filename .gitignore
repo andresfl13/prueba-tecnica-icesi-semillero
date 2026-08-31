@@ -31,3 +31,7 @@ tmp/
 .env.local
 **/application-local.yml
 **/application-secrets.yml
+
+# ---- Notas de trabajo personales ----
+# Guia de comandos de uso propio: no forma parte de la entrega.
+VERSIONADO.md
