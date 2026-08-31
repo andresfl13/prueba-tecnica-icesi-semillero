@@ -1,0 +1,93 @@
+@startuml 04-autenticacion-autorizacion
+title Parte 3.1 — Autenticación y autorización
+
+skinparam defaultFontName Helvetica
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 260
+skinparam sequence {
+    ArrowColor #0B4F8A
+    LifeLineBorderColor #9AB4C8
+    ParticipantBorderColor #0B4F8A
+    ParticipantBackgroundColor #E8F0F8
+    ActorBorderColor #0B4F8A
+}
+
+actor "Usuario\n(estudiante o asesor)" as U
+participant "Portal Vista 360°\n(SPA)" as SPA
+participant "Plataforma\nde identidad" as IDP #DDDDDD
+participant "BFF /\nAgregador" as BFF
+participant "svc-academico" as SVC
+participant "svc-acompanamiento" as ACOMP
+
+== Autenticación: una sola vez, contra la plataforma institucional ==
+
+U -> SPA: abre Vista 360°
+SPA -> IDP: Authorization Code + PKCE
+note right of SPA
+  PKCE y no client secret:
+  un SPA no puede guardar
+  secretos, todo su código
+  es visible.
+end note
+IDP -> U: solicita credenciales
+U -> IDP: se autentica
+IDP --> SPA: código de autorización
+SPA -> BFF: entrega el código
+BFF -> IDP: canjea el código por los tokens
+IDP --> BFF: access token + refresh token
+BFF --> SPA: cookie de sesión\n(HttpOnly, Secure, SameSite)
+
+note over BFF, SPA #FFF6DD
+  <b>El token nunca llega al navegador.</b>
+  Guardarlo en localStorage lo expondría a
+  cualquier XSS. La cookie HttpOnly no es
+  legible desde JavaScript; el costo asumido
+  es tener que proteger contra CSRF.
+end note
+
+== Autorización: se evalúa en cada petición y en cada servicio ==
+
+U -> SPA: consulta la carga de A00398123
+SPA -> BFF: GET /estudiantes/A00398123/carga-academica\n(cookie de sesión)
+BFF -> BFF: recupera el token de la sesión
+BFF -> SVC: GET ... \nAuthorization: Bearer <token del usuario>
+
+note right of BFF #FFF6DD
+  Se propaga el token <b>del usuario</b>, no uno
+  de servicio. Con client credentials el servicio
+  perdería la identidad y no podría autorizar:
+  la regla quedaría solo en el BFF.
+end note
+
+SVC -> SVC: valida firma, emisor, audiencia\ny expiración (JWKS en caché)
+
+alt rol = ESTUDIANTE
+    SVC -> SVC: ¿el 'sub' del token es A00398123?
+    note right of SVC #FFE8E8
+      <b>El código de la URL es una afirmación del cliente.</b>
+      <b>No es una identidad.</b>
+      Confiar en él es el fallo más común
+      de las APIs (OWASP API1: BOLA).
+    end note
+else rol = ACOMPANAMIENTO
+    SVC -> ACOMP: ¿este asesor tiene asignado a A00398123?
+    note right of ACOMP
+      La asignación no cabe en el token:
+      cambia y puede ser grande. Se consulta
+      a su dueño (Parte 1, S3).
+    end note
+    ACOMP --> SVC: sí / no
+end
+
+alt autorizado
+    SVC --> BFF: 200 con la carga académica
+else no autorizado
+    SVC --> BFF: 403
+    note right of SVC
+      Se registra la decisión —permitida
+      o denegada— en la auditoría.
+      Ver Parte 4, escenario B.
+    end note
+end
+BFF --> SPA: respuesta compuesta
+@enduml
