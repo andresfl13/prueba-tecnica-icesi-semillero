@@ -1,0 +1,68 @@
+@startuml 05-escenario-financiero
+title Parte 3.2 · Escenario A — el estudiante necesita ver su estado financiero de inmediato
+
+skinparam defaultFontName Helvetica
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 250
+skinparam sequence {
+    ArrowColor #0B4F8A
+    LifeLineBorderColor #9AB4C8
+    ParticipantBorderColor #0B4F8A
+    ParticipantBackgroundColor #E8F0F8
+}
+
+actor Estudiante as U
+participant "Portal\nVista 360°" as SPA
+participant "BFF /\nAgregador" as BFF
+participant "svc-financiero" as FIN
+database "Caché\nTTL 30-60 s" as CACHE
+participant "Plataforma de\nintegración" as INT #DDDDDD
+participant "ERP\ninstitucional" as ERP #DDDDDD
+
+U -> SPA: abre Vista 360°
+SPA -> BFF: GET /vista-360
+
+par llamadas en paralelo, no en cadena
+    BFF -> FIN: estado financiero
+else
+    BFF -> BFF: académico, actividad,\nacompañamiento y alertas
+end
+
+note right of BFF #FFF6DD
+  En paralelo: la latencia total es la del
+  servicio más lento, no la suma de todos.
+end note
+
+FIN -> CACHE: ¿hay valor vigente?
+
+alt hay valor en caché (< 60 s)
+    CACHE --> FIN: saldo
+else no hay, o expiró
+    FIN -> INT: consulta el estado financiero\n(timeout 2 s)
+    INT -> ERP: API mediada
+    ERP --> INT: saldo, deuda, pagos
+    INT --> FIN: respuesta normalizada
+    FIN -> CACHE: guarda con TTL corto
+end
+
+FIN --> BFF: estado financiero **en vivo**
+BFF --> SPA: vista compuesta
+SPA -> U: muestra el estado financiero
+
+== Si el ERP no responde ==
+
+FIN -> INT: consulta
+INT --x FIN: timeout
+FIN -> FIN: abre el circuit breaker
+FIN --> BFF: no disponible
+BFF --> SPA: el resto de la vista, **sin** la tarjeta financiera
+
+note over SPA, BFF #FFE8E8
+  <b>Degradación explícita, nunca un dato viejo.</b>
+  La pantalla dice "no disponible en este momento"
+  y el resto de la vista 360° carga igual.
+  Un saldo desactualizado presentado como actual
+  genera un reclamo formal; un dato ausente y
+  declarado, no.
+end note
+@enduml
